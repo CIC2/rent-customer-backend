@@ -1,0 +1,63 @@
+name: Build and Deploy to IBM Cloud
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Get source code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Install IBM Cloud CLI
+      - name: Install IBM Cloud CLI
+        run: |
+          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+
+      # 3. Install required plugins
+      - name: Install IBM Cloud Plugins
+        run: |
+          ibmcloud plugin install container-registry -f
+          ibmcloud plugin install kubernetes-service -f
+
+      # 4. Login to IBM Cloud
+      - name: Login to IBM Cloud
+        run: |
+          ibmcloud login \
+            --apikey ${{ secrets.IBM_API_KEY }} \
+            -r ${{ secrets.IBM_REGION }}
+
+      # 5. Login to Container Registry
+      - name: Login to IBM Container Registry
+        run: |
+          ibmcloud cr login
+
+      # 6. Build Docker image
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t de.icr.io/${{ secrets.REGISTRY_NAMESPACE }}/${{ secrets.IMAGE_NAME }}:latest \
+            .
+
+      # 7. Push image to registry
+      - name: Push Docker Image
+        run: |
+          docker push \
+            de.icr.io/${{ secrets.REGISTRY_NAMESPACE }}/${{ secrets.IMAGE_NAME }}:latest
+
+      # 8. Configure kubectl
+      - name: Configure Kubernetes Access
+        run: |
+          ibmcloud ks cluster config \
+            --cluster ${{ secrets.CLUSTER_NAME }}
+
+      # 9. Restart deployment (pull new image)
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl rollout restart deployment/${{ secrets.DEPLOYMENT_NAME }} \
+            -n ${{ secrets.NAMESPACE }}
