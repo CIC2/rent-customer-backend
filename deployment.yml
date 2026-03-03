@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: resale-customer-app
-  namespace: dev-resale
+  name: rent-customer-app
+  namespace: dev-rent
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: resale-customer-app
+      app: rent-customer-app
   template:
     metadata:
       labels:
-        app: resale-customer-app
+        app: rent-customer-app
     spec:
       # <- add the imagePullSecrets here
       imagePullSecrets:
         - name: icr-secret
       containers:
-        - name: resale-customer-app
-          image: de.icr.io/dev-registry/loveresale-customer-backend:latest
+        - name: rent-customer-app
+          image: de.icr.io/dev-registry/rent-customer-backend:latest
           args:
             - --spring.application.json=$(BINDING)
           env:
@@ -52,16 +52,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: resale-customer-service-cip
-  namespace: dev-resale
+  name: rent-customer-service-cip
+  namespace: dev-rent
   labels:
-    app: resale-customer-app
+    app: rent-customer-app
 spec:
   type: ClusterIP
   ports:
     - port: 80
       targetPort: 8025
   selector:
-    app: resale-customer-app
+    app: rent-customer-app
 
 
